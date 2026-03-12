@@ -150,7 +150,9 @@
       const pw = document.getElementById('passwordInput').value;
       if (pw === ADMIN_PASSWORD) {
         document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('dashboardSection').style.display = 'block';
+        const dashboard = document.getElementById('dashboardSection');
+        dashboard.classList.remove('dashboard');
+        dashboard.style.display = 'block';
         loadStudents();
       } else {
         document.getElementById('errorText').style.display = 'block';
