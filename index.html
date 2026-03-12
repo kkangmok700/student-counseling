@@ -286,32 +286,9 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    var supabaseReady = false;
+    const SUPABASE_URL = 'https://qikbmhabsktpoogzxflc.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpa2JtaGFic2t0cG9vZ3p4ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MDY0MjIsImV4cCI6MjA4ODE4MjQyMn0.pDgBMhE-9Fo810hrI8bzJPpnstumbLdwIHo_O3IHS5Q';
 
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      });
-    }
-
-    async function initSupabase() {
-      try {
-        await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-        await loadScript('js/config.js');
-        supabaseReady = true;
-      } catch (e) {
-        console.error('SDK 로드 실패:', e);
-        supabaseReady = false;
-      }
-    }
-
-    initSupabase();
-  </script>
-  <script>
     const form = document.getElementById('studentForm');
     const formCard = document.getElementById('formCard');
     const successCard = document.getElementById('successCard');
@@ -346,37 +323,42 @@
       };
 
       try {
-        if (!supabaseReady || typeof supabaseClient === 'undefined' || !supabaseClient) {
-          throw new Error('네트워크 연결을 확인해 주세요.');
-        }
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('요청 시간이 초과되었습니다.')), 15000)
-        );
-
-        const insertPromise = supabaseClient
-          .from('students')
-          .insert([{
-            name,
-            grade,
+        const response = await fetch(SUPABASE_URL + '/rest/v1/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            name: name,
+            grade: grade,
             desired_field: desiredField,
             discussion_topic: discussionTopic
-          }]);
+          }),
+          signal: controller.signal
+        });
 
-        const { error } = await Promise.race([insertPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
 
-        if (error) {
-          throw error;
+        if (!response.ok) {
+          throw new Error('서버 오류가 발생했습니다. (코드: ' + response.status + ')');
         }
 
         formCard.style.display = 'none';
         successCard.style.display = 'block';
       } catch (err) {
         console.error(err);
-        showToast(err.message || '제출 중 오류가 발생했습니다. 다시 시도해 주세요.');
+        if (err.name === 'AbortError') {
+          showToast('요청 시간이 초과되었습니다. 다시 시도해 주세요.');
+        } else {
+          showToast(err.message || '제출 중 오류가 발생했습니다. 다시 시도해 주세요.');
+        }
         resetBtn();
-        // SDK 로드 실패였으면 재시도
-        if (!supabaseReady) initSupabase();
       }
     });
   </script>
