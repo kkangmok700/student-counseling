@@ -165,7 +165,7 @@
 
     // 학생 목록 불러오기
     async function loadStudents() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('students')
         .select('*')
         .order('created_at', { ascending: false });
@@ -269,7 +269,7 @@
     document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
       if (!deleteTargetId) return;
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('students')
         .delete()
         .eq('id', deleteTargetId);

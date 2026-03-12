@@ -1,0 +1,42 @@
+name: Save Counseling Data
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  save-data:
+    if: contains(github.event.issue.labels.*.name, 'counseling')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Parse Issue and Save to JSON
+        id: parse
+        run: |
+          # 이슈 본문에서 데이터 추출 (정규표현식 사용)
+          BODY="${{ github.event.issue.body }}"
+          
+          # 간단한 파싱 예시 (JSON 파일로 저장)
+          # 각 필드별로 매칭하여 JSON 객체 생성
+          echo "{\"title\": \"${{ github.event.issue.title }}\", \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\", \"url\": \"${{ github.event.issue.html_url }}\"}" > data/latest.json
+          
+          # 모든 상담 내역을 저장하는 리스트에 추가 (append)
+          if [ ! -f data/all_counseling.json ]; then
+            echo "[]" > data/all_counseling.json
+          fi
+          
+          # 신규 데이터를 배열에 추가
+          jq ". += [{\"id\": ${{ github.event.issue.number }}, \"title\": \"${{ github.event.issue.title }}\", \"body\": $(echo "$BODY" | jq -Rs .), \"created_at\": \"${{ github.event.issue.created_at }}\"}]" data/all_counseling.json > data/temp.json && mv data/temp.json data/all_counseling.json
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "Add new counseling data from Issue #${{ github.event.issue.number }}"
+          git push
