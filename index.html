@@ -285,8 +285,32 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
+  <script>
+    var supabaseReady = false;
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initSupabase() {
+      try {
+        await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+        await loadScript('js/config.js');
+        supabaseReady = true;
+      } catch (e) {
+        console.error('SDK 로드 실패:', e);
+        supabaseReady = false;
+      }
+    }
+
+    initSupabase();
+  </script>
   <script>
     const form = document.getElementById('studentForm');
     const formCard = document.getElementById('formCard');
@@ -297,7 +321,7 @@
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+      setTimeout(() => toast.classList.remove('show'), 5000);
     }
 
     form.addEventListener('submit', async (e) => {
@@ -322,8 +346,8 @@
       };
 
       try {
-        if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-          throw new Error('데이터베이스 연결이 초기화되지 않았습니다.');
+        if (!supabaseReady || typeof supabaseClient === 'undefined' || !supabaseClient) {
+          throw new Error('네트워크 연결을 확인해 주세요.');
         }
 
         const timeoutPromise = new Promise((_, reject) =>
@@ -349,8 +373,10 @@
         successCard.style.display = 'block';
       } catch (err) {
         console.error(err);
-        showToast('제출 중 오류가 발생했습니다. 다시 시도해 주세요.');
+        showToast(err.message || '제출 중 오류가 발생했습니다. 다시 시도해 주세요.');
         resetBtn();
+        // SDK 로드 실패였으면 재시도
+        if (!supabaseReady) initSupabase();
       }
     });
   </script>
