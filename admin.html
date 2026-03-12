@@ -623,9 +623,11 @@
       </div>
       <h2>관리자 로그인</h2>
       <p class="subtitle">의료AI융합과 상담 관리 시스템</p>
-      <input type="password" id="passwordInput" placeholder="****" autofocus>
-      <p class="error-msg" id="errorText">비밀번호가 올바르지 않습니다</p>
-      <button class="login-btn" onclick="handleLogin()">로그인</button>
+      <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+        <input type="password" id="passwordInput" placeholder="****" autocomplete="off">
+        <p class="error-msg" id="errorText">비밀번호가 올바르지 않습니다</p>
+        <button type="submit" class="login-btn">로그인</button>
+      </form>
     </div>
   </div>
 
@@ -792,9 +794,6 @@
       }
     }
 
-    document.getElementById('passwordInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleLogin();
-    });
 
     // 데이터 로드
     async function loadStudents() {
